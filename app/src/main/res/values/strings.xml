@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nítida</string>
+    <string name="adjustments">Ajustes del modo</string>
+    <string name="flip_camera">Cambiar cámara</string>
+    <string name="shutter">Hacer foto</string>
+    <string name="last_photo">Última foto</string>
+    <string name="hold_to_compare">Mantén pulsado para ver la original</string>
+    <string name="showing_original">Original (1 foto, sin ajustes)</string>
+    <string name="keep_shooting">Seguir</string>
+    <string name="open_gallery">Abrir en galería</string>
+    <string name="reset_mode">Restablecer modo</string>
+    <string name="camera_permission_needed">Nítida necesita la cámara para hacer fotos.</string>
+    <string name="grant">Dar permiso</string>
+    <string name="mirror_selfies">Selfies como en el espejo</string>
+</resources>
