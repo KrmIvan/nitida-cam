@@ -31,6 +31,32 @@ public final class ImageOps {
         return out;
     }
 
+    /**
+     * Tamaño del mayor recorte centrado con proporción ratioW:ratioH que cabe en w x h.
+     * Devuelve {ancho, alto}. Si alguna proporción es 0, no se recorta.
+     */
+    public static int[] cropSize(int w, int h, int ratioW, int ratioH) {
+        if (ratioW <= 0 || ratioH <= 0) return new int[]{w, h};
+        // ¿Sobra ancho o sobra alto?
+        if ((long) w * ratioH > (long) h * ratioW) {
+            int cw = (int) ((long) h * ratioW / ratioH);
+            return new int[]{Math.max(1, cw), h};
+        } else {
+            int ch = (int) ((long) w * ratioH / ratioW);
+            return new int[]{w, Math.max(1, ch)};
+        }
+    }
+
+    /** Recorte centrado a cw x ch. Devuelve un array nuevo (o el mismo si no hay que recortar). */
+    public static int[] cropCenter(int[] px, int w, int h, int cw, int ch) {
+        if (cw == w && ch == h) return px;
+        if (cw > w || ch > h || cw <= 0 || ch <= 0) throw new IllegalArgumentException("Recorte fuera de la imagen");
+        int x0 = (w - cw) / 2, y0 = (h - ch) / 2;
+        int[] out = new int[cw * ch];
+        for (int y = 0; y < ch; y++) System.arraycopy(px, (y0 + y) * w + x0, out, y * cw, cw);
+        return out;
+    }
+
     /** Espejo horizontal en el sitio (para selfies "como en el espejo"). */
     public static void mirror(int[] px, int w, int h) {
         for (int y = 0; y < h; y++) {

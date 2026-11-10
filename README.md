@@ -18,6 +18,17 @@ Pensada para sacar más partido a cámaras de gama media (en concreto, la de un 
 | Selfie | Cámara frontal | Tono cálido, luz suave |
 | Exterior | Sol y cielo | −0,3 EV, cielo recuperado, colores más vivos |
 
+- **Formatos de foto** con guía en el visor y opción de guardar al tamaño exacto para redes:
+
+| Formato | Proporción | Medida | Dónde se usa |
+|---|---|---|---|
+| Completo | 3:4 | 1080 × 1440 | Todo el sensor; la cuadrícula del perfil de Instagram la muestra sin recortar |
+| Historia | 9:16 | 1080 × 1920 | Historias y Reels (Instagram, Facebook), TikTok, YouTube Shorts, estados de WhatsApp |
+| Publicación | 4:5 | 1080 × 1350 | Feed de Instagram, Facebook y LinkedIn |
+| Cuadrado | 1:1 | 1080 × 1080 | Fotos de perfil, carruseles, productos |
+| Pinterest | 2:3 | 1000 × 1500 | Pines, carteles verticales |
+| Horizontal | 16:9 | 1920 × 1080 | Miniaturas de YouTube, X/Twitter, fondos de PC |
+
 - **Panel de ajustes**: fotos de la ráfaga, exposición (EV), brillo, contraste, altas luces, sombras, saturación, calidez, nitidez y viñeta.
 - **Vista previa aproximada** del modo en el visor (Android 12+).
 - **Antes / después**: tras cada foto, mantén pulsado para ver la original.

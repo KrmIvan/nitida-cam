@@ -107,6 +107,28 @@ public class PhotoTunerTest {
     }
 
     @Test
+    public void recortesDeFormatosTienenLaProporcionExacta() {
+        // Foto vertical de 3000x4000 (sensor 4:3 con el móvil en vertical)
+        assertArrayEquals(new int[]{2250, 4000}, ImageOps.cropSize(3000, 4000, 9, 16));   // historia
+        assertArrayEquals(new int[]{3000, 3750}, ImageOps.cropSize(3000, 4000, 4, 5));    // publicación
+        assertArrayEquals(new int[]{3000, 3000}, ImageOps.cropSize(3000, 4000, 1, 1));    // cuadrado
+        assertArrayEquals(new int[]{3000, 4000}, ImageOps.cropSize(3000, 4000, 3, 4));    // completo
+        assertArrayEquals(new int[]{2666, 4000}, ImageOps.cropSize(3000, 4000, 2, 3));    // pinterest
+        assertArrayEquals(new int[]{3000, 1687}, ImageOps.cropSize(3000, 4000, 16, 9));   // horizontal
+        assertArrayEquals(new int[]{4000, 2250}, ImageOps.cropSize(4000, 3000, 16, 9));   // horizontal girando el móvil
+        assertArrayEquals(new int[]{4000, 3000}, ImageOps.cropSize(4000, 3000, 0, 0));    // sin recorte
+    }
+
+    @Test
+    public void recorteCentradoCogeElCentro() {
+        int w = 6, h = 4;
+        int[] px = new int[w * h];
+        for (int i = 0; i < px.length; i++) px[i] = i;
+        int[] c = ImageOps.cropCenter(px, w, h, 2, 2);
+        assertArrayEquals(new int[]{8, 9, 14, 15}, c);
+    }
+
+    @Test
     public void modoGymBajaAltasLucesYSubeContraste() {
         int w = 256, h = 4;
         int[] px = new int[w * h];

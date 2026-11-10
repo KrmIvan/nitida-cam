@@ -12,5 +12,6 @@
     <string name="reset_mode">Restablecer modo</string>
     <string name="camera_permission_needed">Nítida necesita la cámara para hacer fotos.</string>
     <string name="grant">Dar permiso</string>
+    <string name="format">Formato de la foto</string>
     <string name="mirror_selfies">Selfies como en el espejo</string>
 </resources>

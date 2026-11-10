@@ -41,6 +41,7 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.snackbar.Snackbar
@@ -59,6 +60,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var root: FrameLayout
     private lateinit var previewView: PreviewView
+    private lateinit var frameGuide: FrameGuideView
+    private lateinit var btnFormat: MaterialButton
     private lateinit var topBar: LinearLayout
     private lateinit var txtStatus: TextView
     private lateinit var bottomPanel: LinearLayout
@@ -77,6 +80,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var store: PresetStore
     private var preset = Preset.NATURAL
     private var adj = Adjustments()
+    private var format = PhotoFormat.FULL
 
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var cameraProvider: ProcessCameraProvider? = null
@@ -102,12 +106,14 @@ class MainActivity : AppCompatActivity() {
             override fun onOrientationChanged(orientation: Int) {
                 if (orientation == ORIENTATION_UNKNOWN) return
                 // La pantalla está fija en vertical, pero la foto debe salir derecha si giras el móvil
-                imageCapture?.targetRotation = when (orientation) {
+                val rotation = when (orientation) {
                     in 45 until 135 -> Surface.ROTATION_270
                     in 135 until 225 -> Surface.ROTATION_180
                     in 225 until 315 -> Surface.ROTATION_90
                     else -> Surface.ROTATION_0
                 }
+                imageCapture?.targetRotation = rotation
+                frameGuide.landscape = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
             }
         }
     }
@@ -121,6 +127,8 @@ class MainActivity : AppCompatActivity() {
         store = PresetStore(this)
         preset = store.current
         adj = store.load(preset)
+        format = store.format
+        applyFormat()
 
         // TextureView en lugar de SurfaceView para poder aplicar el filtro de vista previa
         previewView.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
@@ -161,6 +169,8 @@ class MainActivity : AppCompatActivity() {
     private fun bindViews() {
         root = findViewById(R.id.root)
         previewView = findViewById(R.id.previewView)
+        frameGuide = findViewById(R.id.frameGuide)
+        btnFormat = findViewById(R.id.btnFormat)
         topBar = findViewById(R.id.topBar)
         txtStatus = findViewById(R.id.txtStatus)
         bottomPanel = findViewById(R.id.bottomPanel)
@@ -244,6 +254,19 @@ class MainActivity : AppCompatActivity() {
                 onMirrorChange = { store.mirrorSelfies = it },
             )
         }
+        btnFormat.setOnClickListener {
+            FormatSheet.show(
+                context = this,
+                current = format,
+                exactSize = store.exactSize,
+                onSelect = { f ->
+                    format = f
+                    store.format = f
+                    applyFormat()
+                },
+                onExactChange = { store.exactSize = it },
+            )
+        }
         thumbnail.setOnClickListener { lastResult?.let { showResult(it) } }
         findViewById<View>(R.id.btnResultClose).setOnClickListener { hideResult() }
         findViewById<View>(R.id.btnResultOpen).setOnClickListener { openInGallery() }
@@ -264,6 +287,11 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+    }
+
+    private fun applyFormat() {
+        btnFormat.text = format.ratioText
+        frameGuide.format = format
     }
 
     private fun refreshStatus() {
@@ -372,6 +400,8 @@ class MainActivity : AppCompatActivity() {
         val settings = adj.copy()
         val count = settings.burstFrames
         val mirror = lensFacing == CameraSelector.LENS_FACING_FRONT && store.mirrorSelfies
+        val shotFormat = format
+        val exact = store.exactSize
         setBusy(true, if (count > 1) "No te muevas… 0/$count" else "Haciendo foto…")
 
         lifecycleScope.launch {
@@ -381,7 +411,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 busyText.text = "Procesando…"
                 val result = withContext(Dispatchers.Default) {
-                    BurstProcessor.process(shots, settings, mirror) { msg ->
+                    BurstProcessor.process(shots, settings, mirror, shotFormat, exact) { msg ->
                         runOnUiThread { busyText.text = msg }
                     }
                 }
@@ -408,9 +438,8 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun showResult(result: ProcessedPhoto) {
-        val info = if (result.framesTotal > 1) {
-            "  ·  ${result.framesUsed}/${result.framesTotal} fotos fusionadas"
-        } else ""
+        val frames = if (result.framesTotal > 1) "${result.framesUsed}/${result.framesTotal} fotos fusionadas · " else ""
+        val info = "\n$frames${result.width} × ${result.height} px"
         val afterLabel = getString(R.string.hold_to_compare) + info
         resultImage.setImageBitmap(result.after)
         resultLabel.text = afterLabel

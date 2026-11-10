@@ -8,6 +8,7 @@ import com.ivanjulval.nitida.core.BurstMerger
 import com.ivanjulval.nitida.core.ImageOps
 import com.ivanjulval.nitida.core.PhotoTuner
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /** Resultado: la foto a tamaño completo para guardar y dos versiones reducidas para comparar. */
@@ -17,6 +18,8 @@ class ProcessedPhoto(
     val after: Bitmap,
     val framesUsed: Int,
     val framesTotal: Int,
+    val width: Int,
+    val height: Int,
 )
 
 /** Une todo el proceso: elegir referencia → fusionar → ajustar → girar. Llamar fuera del hilo principal. */
@@ -29,6 +32,8 @@ object BurstProcessor {
         frames: List<CapturedFrame>,
         adj: Adjustments,
         mirror: Boolean,
+        format: PhotoFormat,
+        exactSize: Boolean,
         progress: (String) -> Unit,
     ): ProcessedPhoto {
         require(frames.isNotEmpty()) { "No hay fotos" }
@@ -41,21 +46,50 @@ object BurstProcessor {
         val ref = frames[refIndex]
         val rotation = ref.rotationDegrees
 
-        // "Antes": la referencia sin tocar, reducida, para la comparación
-        val before = orient(decode(ref.jpeg, sampleSize = 2), rotation, mirror)
+        // "Antes": la referencia sin tocar, reducida y con el mismo recorte, para la comparación
+        val before = cropBitmap(orient(decode(ref.jpeg, sampleSize = 2), rotation, mirror), format)
 
         // 2) Fusión
         val sample = if (pixelCount(ref.jpeg) > MAX_PIXELS) 2 else 1
         val merged = merge(frames, refIndex, sample, progress)
 
-        // 3) Ajustes del modo
-        progress("Aplicando el modo…")
-        PhotoTuner.process(merged.pixels, merged.width, merged.height, adj)
+        // 3) Recorte al formato. Se hace antes de girar: si la foto se girará 90°, la proporción
+        //    en la imagen sin girar es la inversa. Antes de los ajustes para que la viñeta quede centrada.
+        val quarter = rotation % 180 != 0
+        val crop = if (quarter) ImageOps.cropSize(merged.width, merged.height, format.ratioH, format.ratioW)
+                   else ImageOps.cropSize(merged.width, merged.height, format.ratioW, format.ratioH)
+        val pixels = ImageOps.cropCenter(merged.pixels, merged.width, merged.height, crop[0], crop[1])
 
-        // 4) Girar (y espejo en selfies) y pasar a Bitmap
-        val full = toBitmap(merged.pixels, merged.width, merged.height, rotation, mirror)
+        // 4) Ajustes del modo
+        progress("Aplicando el modo…")
+        PhotoTuner.process(pixels, crop[0], crop[1], adj)
+
+        // 5) Girar (y espejo en selfies), pasar a Bitmap y, si se pide, al tamaño exacto
+        var full = toBitmap(pixels, crop[0], crop[1], rotation, mirror)
+        if (exactSize) full = scaleExact(full, format)
         val after = scaleToMax(full, PREVIEW_MAX)
-        return ProcessedPhoto(full, before, after, merged.used, frames.size)
+        return ProcessedPhoto(full, before, after, merged.used, frames.size, full.width, full.height)
+    }
+
+    /** Escala al tamaño recomendado del formato. "Completo" sigue la orientación de la foto. */
+    private fun scaleExact(src: Bitmap, format: PhotoFormat): Bitmap {
+        var tw = format.targetW
+        var th = format.targetH
+        if (format.ratioW == 0 && src.width > src.height) { tw = format.targetH; th = format.targetW }
+        if (format.ratioW == 0) {
+            // Sin recorte la proporción puede no ser exacta: se respeta la de la foto
+            val f = min(tw, th) / min(src.width, src.height).toFloat()
+            tw = (src.width * f).roundToInt()
+            th = (src.height * f).roundToInt()
+        }
+        if (src.width == tw && src.height == th) return src
+        return Bitmap.createScaledBitmap(src, tw, th, true)
+    }
+
+    private fun cropBitmap(src: Bitmap, format: PhotoFormat): Bitmap {
+        val c = ImageOps.cropSize(src.width, src.height, format.ratioW, format.ratioH)
+        if (c[0] == src.width && c[1] == src.height) return src
+        return Bitmap.createBitmap(src, (src.width - c[0]) / 2, (src.height - c[1]) / 2, c[0], c[1])
     }
 
     private class Merged(val pixels: IntArray, val width: Int, val height: Int, val used: Int)

@@ -70,6 +70,15 @@ class PresetStore(context: Context) {
         get() = prefs.getBoolean(KEY_MIRROR, true)
         set(value) = prefs.edit { putBoolean(KEY_MIRROR, value) }
 
+    var format: PhotoFormat
+        get() = PhotoFormat.entries.firstOrNull { it.name == prefs.getString(KEY_FORMAT, null) } ?: PhotoFormat.FULL
+        set(value) = prefs.edit { putString(KEY_FORMAT, value.name) }
+
+    /** Guardar al tamaño exacto recomendado (p. ej. 1080 × 1920) en vez de a máxima resolución. */
+    var exactSize: Boolean
+        get() = prefs.getBoolean(KEY_EXACT, false)
+        set(value) = prefs.edit { putBoolean(KEY_EXACT, value) }
+
     fun load(preset: Preset): Adjustments {
         val d = preset.defaults()
         val k = preset.name
@@ -115,5 +124,7 @@ class PresetStore(context: Context) {
     private companion object {
         const val KEY_CURRENT = "current"
         const val KEY_MIRROR = "mirror_selfies"
+        const val KEY_FORMAT = "format"
+        const val KEY_EXACT = "exact_size"
     }
 }
